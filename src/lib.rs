@@ -29,7 +29,8 @@ impl Processor {
     ///
     /// Overflow is ignored.
     /// `ADDI rd, rs1, 0` == `MV rd, rs1`
-    /// (section 2.4)
+    /// ([The RISC-V Instruction Set Manual](https://riscv.org/specifications/),
+    ///  Volume 1, Version, 2.1, Section 2.4)
     fn addi(&mut self, rd: Register, rs1: Register, imm: u32) {
         let signed_imm = imm as i32;
         let rs1_val = self.get(rs1) as i32;
@@ -38,6 +39,8 @@ impl Processor {
     }
 
     /// Check if `rs1` is less than sign-extended `imm`.
+    /// ([The RISC-V Instruction Set Manual](https://riscv.org/specifications/),
+    ///  Volume 1, Version, 2.1, Section 2.4)
     fn slti(&mut self, rd: Register, rs1: Register, imm: u32) {
         let signed_imm = imm as i32;
         let rs1_val = self.get(rs1) as i32;
