@@ -36,6 +36,13 @@ impl Processor {
         let (result, _) = rs1_val.overflowing_add(signed_imm);
         self.set(rd, result as u32);
     }
+
+    /// Check if `rs1` is less than sign-extended `imm`.
+    fn slti(&mut self, rd: Register, rs1: Register, imm: u32) {
+        let signed_imm = imm as i32;
+        let rs1_val = self.get(rs1) as i32;
+        self.set(rd, if rs1_val < signed_imm { 1 } else { 0 })
+    }
 }
 
 fn sign_extend(imm: u32) -> u32 {
@@ -45,86 +52,103 @@ fn sign_extend(imm: u32) -> u32 {
     extended_imm as u32
 }
 
+macro_rules! test_imm_op {
+    ($test_num: expr, $inst:ident, $result:expr, $val1:expr, $imm:expr) => {{
+        let mut cpu = Processor::new();
+        let rd: Register = 1;
+        let rs1: Register = 3;
+        cpu.set(rs1, $val1);
+        cpu.$inst(rd, rs1, sign_extend($imm));
+        assert_eq!($result, cpu.get(rd));
+    }};
+}
+
+macro_rules! test_imm_src1_eq_dest {
+    ($test_num:expr, $inst:ident, $result:expr, $val1:expr, $imm:expr) => {{
+        let mut cpu = Processor::new();
+        let rd: Register = 1;
+        let rs1: Register = 1;
+        cpu.set(rs1, $val1);
+        cpu.$inst(rd, rs1, sign_extend($imm));
+        assert_eq!($result, cpu.get(rd));
+    }}
+}
+
+macro_rules! test_imm_zerosrc1 {
+    ($test_num:expr, $inst:ident, $result:expr, $imm:expr) => {{
+        let mut cpu = Processor::new();
+        let rd: Register = 1;
+        let rs1: Register = 0;
+        cpu.$inst(rd, rs1, sign_extend($imm));
+        assert_eq!($result, cpu.get(rd));
+    }}
+}
+
+macro_rules! test_imm_zerodest {
+    ($test_num:expr, $inst:ident, $val1:expr, $imm:expr) => {{
+        let mut cpu = Processor::new();
+        let rd: Register = 0;
+        let rs1: Register = 1;
+        cpu.$inst(rd, rs1, $imm);
+        assert_eq!(0, cpu.get(rd));
+    }}
+}
+
 #[test]
 fn addi() {
-    // https://github.com/riscv/riscv-tests/blob/master/isa/rv32ui/addi.S
-    let mut cpu = Processor::new();
-    let rd: Register = 1;
-    let rs1: Register = 3;
+    // From https://github.com/riscv/riscv-tests/blob/master/isa/rv64ui/addi.S
+    test_imm_op!( 2,  addi, 0x00000000, 0x00000000, 0x000 );
+    test_imm_op!( 3,  addi, 0x00000002, 0x00000001, 0x001 );
+    test_imm_op!( 4,  addi, 0x0000000a, 0x00000003, 0x007 );
 
-    // Arithmetic
-    cpu.set(rs1, 0x00000000);
-    cpu.addi(rd, rs1, sign_extend(0x000));
-    assert_eq!(0x00000000, cpu.get(rd));
+    test_imm_op!( 5,  addi, 0xfffff800, 0x00000000, 0x800 );
+    test_imm_op!( 6,  addi, 0x80000000, 0x80000000, 0x000 );
+    test_imm_op!( 7,  addi, 0x7ffff800, 0x80000000, 0x800 );
 
-    cpu.set(rs1, 0x00000001);
-    cpu.addi(rd, rs1, sign_extend(0x001));
-    assert_eq!(0x00000002, cpu.get(rd));
+    test_imm_op!( 8,  addi, 0x000007ff, 0x00000000, 0x7ff );
+    test_imm_op!( 9,  addi, 0x7fffffff, 0x7fffffff, 0x000 );
+    test_imm_op!( 10, addi, 0x800007fe, 0x7fffffff, 0x7ff );
 
-    cpu.set(rs1, 0x00000003);
-    cpu.addi(rd, rs1, sign_extend(0x007));
-    assert_eq!(0x0000000a, cpu.get(rd));
+    test_imm_op!( 11, addi, 0x800007ff, 0x80000000, 0x7ff );
+    test_imm_op!( 12, addi, 0x7ffff7ff, 0x7fffffff, 0x800 );
 
-    cpu.set(rs1, 0x00000000);
-    cpu.addi(rd, rs1, sign_extend(0x800));
-    assert_eq!(0xfffff800, cpu.get(rd));
+    test_imm_op!( 13, addi, 0xffffffff, 0x00000000, 0xfff );
+    test_imm_op!( 14, addi, 0x00000000, 0xffffffff, 0x001 );
+    test_imm_op!( 15, addi, 0xfffffffe, 0xffffffff, 0xfff );
 
-    cpu.set(rs1, 0x80000000);
-    cpu.addi(rd, rs1, sign_extend(0x000));
-    assert_eq!(0x80000000, cpu.get(rd));
+    test_imm_op!( 16, addi, 0x80000000, 0x7fffffff, 0x001 );
 
-    cpu.set(rs1, 0x80000000);
-    cpu.addi(rd, rs1, sign_extend(0x800));
-    assert_eq!(0x7ffff800, cpu.get(rd));
+    test_imm_src1_eq_dest!( 17, addi, 24, 13, 11 );
 
-    cpu.set(rs1, 0x00000000);
-    cpu.addi(rd, rs1, sign_extend(0x7ff));
-    assert_eq!(0x000007ff, cpu.get(rd));
+    test_imm_zerosrc1!( 24, addi, 32, 32 );
+    test_imm_zerodest!( 25, addi, 33, 50 );
+}
 
-    cpu.set(rs1, 0x7fffffff);
-    cpu.addi(rd, rs1, sign_extend(0x000));
-    assert_eq!(0x7fffffff, cpu.get(rd));
+#[test]
+fn slti() {
+    // From https://github.com/riscv/riscv-tests/blob/master/isa/rv64ui/slti.S
+    test_imm_op!( 2, slti, 0, 0x00000000, 0x000 );
+    test_imm_op!( 3, slti, 0, 0x00000001, 0x001 );
+    test_imm_op!( 4, slti, 1, 0x00000003, 0x007 );
+    test_imm_op!( 5, slti, 0, 0x00000007, 0x003 );
 
-    cpu.set(rs1, 0x7fffffff);
-    cpu.addi(rd, rs1, sign_extend(0x7ff));
-    assert_eq!(0x800007fe, cpu.get(rd));
+    test_imm_op!( 6,  slti, 0, 0x00000000, 0x800 );
+    test_imm_op!( 7,  slti, 1, 0x80000000, 0x000 );
+    test_imm_op!( 8,  slti, 1, 0x80000000, 0x800 );
 
-    cpu.set(rs1, 0x80000000);
-    cpu.addi(rd, rs1, sign_extend(0x7ff));
-    assert_eq!(0x800007ff, cpu.get(rd));
+    test_imm_op!( 9,  slti, 1, 0x00000000, 0x7ff );
+    test_imm_op!( 10, slti, 0, 0x7fffffff, 0x000 );
+    test_imm_op!( 11, slti, 0, 0x7fffffff, 0x7ff );
 
-    cpu.set(rs1, 0x7fffffff);
-    cpu.addi(rd, rs1, sign_extend(0x800));
-    assert_eq!(0x7ffff7ff, cpu.get(rd));
+    test_imm_op!( 12, slti, 1, 0x80000000, 0x7ff );
+    test_imm_op!( 13, slti, 0, 0x7fffffff, 0x800 );
 
-    cpu.set(rs1, 0x00000000);
-    cpu.addi(rd, rs1, sign_extend(0xfff));
-    assert_eq!(0xffffffff, cpu.get(rd));
+    test_imm_op!( 14, slti, 0, 0x00000000, 0xfff );
+    test_imm_op!( 15, slti, 1, 0xffffffff, 0x001 );
+    test_imm_op!( 16, slti, 0, 0xffffffff, 0xfff );
 
-    cpu.set(rs1, 0xffffffff);
-    cpu.addi(rd, rs1, sign_extend(0x001));
-    assert_eq!(0x00000000, cpu.get(rd));
+    test_imm_src1_eq_dest!( 17, slti, 1, 11, 13 );
 
-    cpu.set(rs1, 0xffffffff);
-    cpu.addi(rd, rs1, sign_extend(0xfff));
-    assert_eq!(0xfffffffe, cpu.get(rd));
-
-    cpu.set(rs1, 0x7fffffff);
-    cpu.addi(rd, rs1, sign_extend(0x001));
-    assert_eq!(0x80000000, cpu.get(rd));
-
-    // Same source & destination
-    cpu.set(1, 13);
-    cpu.addi(1, 1, sign_extend(11));
-    assert_eq!(24, cpu.get(1));
-
-    // Operations involving x0
-    cpu.addi(rd, 0, sign_extend(32));
-    assert_eq!(32, cpu.get(rd));
-
-    cpu.set(rs1, 33);
-    cpu.addi(0, rs1, sign_extend(50));
-    assert_eq!(0, cpu.get(0));
-
-    // Ignoring bypassing tests as there's no need to worry about no-ops.
+    test_imm_zerosrc1!( 24, slti, 0, 0xfff );
+    test_imm_zerodest!( 25, slti, 0x00ff00ff, 0xfff );
 }
