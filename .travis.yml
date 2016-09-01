@@ -2,9 +2,7 @@ language: rust
 cache: cargo
 before_script:
 - |
-  (cargo install rustfmt || true) &&
-  export PATH=$HOME:/.local/bin:$PATH &&
-  export PATH=$HOME:/.cargo/bin:$PATH
+  (cargo install rustfmt || true)
 script:
 - |
   cargo fmt -- --write-mode=diff &&
