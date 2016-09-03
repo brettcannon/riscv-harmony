@@ -2,6 +2,8 @@
 A [RISC-V](https://riscv.org/)
 [ISA](https://riscv.org/specifications/) simulator written in Rust.
 
+[![Build Status](https://travis-ci.org/brettcannon/riscv-harmony.svg?branch=master)](https://travis-ci.org/brettcannon/riscv-harmony)
+
 ## Purpose
 There are three reasons for this project. First and foremost is for me
 to learn Rust. Since the language is a systems one, I figured it would
