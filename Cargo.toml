@@ -6,4 +6,3 @@ authors = ["Brett Cannon <brett@python.org>"]
 [dependencies]
 
 [dev-dependencies]
-rustfmt = "*"
