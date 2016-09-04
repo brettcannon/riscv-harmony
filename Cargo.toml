@@ -4,3 +4,6 @@ version = "0.1.0"
 authors = ["Brett Cannon <brett@python.org>"]
 
 [dependencies]
+
+[dev-dependencies]
+rustfmt = "*"

@@ -44,13 +44,7 @@ impl Processor {
     fn slti(&mut self, rd: Register, rs1: Register, imm: u32) {
         let signed_imm = imm as i32;
         let rs1_val = self.get(rs1) as i32;
-        self.set(rd,
-                 if rs1_val < signed_imm {
-                     1
-                 } else {
-                     0
-                 })
-    }
+        self.set(rd, if rs1_val < signed_imm { 1 } else { 0 }) }
 }
 
 fn sign_extend(imm: u32) -> u32 {
