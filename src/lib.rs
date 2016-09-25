@@ -46,6 +46,16 @@ impl Processor {
         let rs1_val = self.get(rs1) as i32;
         self.set(rd, if rs1_val < signed_imm { 1 } else { 0 })
     }
+
+    /// Check if `rs1` is less than sign-extended `imm` in an unsigned comparison.
+    fn sltiu(&mut self, rd: Register, rs1: Register, imm: u32) {
+        let rs1_val: u32 = self.get(rs1);
+        if imm == 1 {  // SEQZ pseudo-op.
+            self.set(rd, if rs1_val == 0 { 1 } else { 0 })
+        } else {
+            self.set(rd, if rs1_val < imm { 1 } else { 0 })
+        }
+    }
 }
 
 fn sign_extend(imm: u32) -> u32 {
@@ -154,4 +164,38 @@ fn slti() {
 
     test_imm_zerosrc1!(24, slti, 0, 0xfff);
     test_imm_zerodest!(25, slti, 0x00ff00ff, 0xfff);
+}
+
+
+#[test]
+fn sltiu() {
+    // From https://github.com/riscv/riscv-tests/blob/master/isa/rv64ui/sltiu.S
+    test_imm_op!(2, sltiu, 0, 0x00000000, 0x000);
+    test_imm_op!(4, sltiu, 1, 0x00000003, 0x007);
+    test_imm_op!(5, sltiu, 0, 0x00000007, 0x003);
+
+    test_imm_op!(6, sltiu, 1, 0x00000000, 0x800);
+    test_imm_op!(7, sltiu, 0, 0x80000000, 0x000);
+    test_imm_op!(8, sltiu, 1, 0x80000000, 0x800);
+
+    test_imm_op!(9, sltiu, 1, 0x00000000, 0x7ff);
+    test_imm_op!(10, sltiu, 0, 0x7fffffff, 0x000);
+    test_imm_op!(11, sltiu, 0, 0x7fffffff, 0x7ff);
+
+    test_imm_op!(12, sltiu, 0, 0x80000000, 0x7ff);
+    test_imm_op!(13, sltiu, 1, 0x7fffffff, 0x800);
+
+    test_imm_op!(14, sltiu, 1, 0x00000000, 0xfff);
+    test_imm_op!(15, sltiu, 0, 0xffffffff, 0x001);
+    test_imm_op!(16, sltiu, 0, 0xffffffff, 0xfff);
+
+    test_imm_src1_eq_dest!(17, sltiu, 1, 11, 13);
+
+    test_imm_zerosrc1!(24, sltiu, 1, 0xfff);
+    test_imm_zerodest!(25, sltiu, 0x00ff00ff, 0xfff);
+
+    // SEQZ
+    test_imm_op!(3, sltiu, 1, 0x00000000, 0x001);
+    test_imm_op!(3, sltiu, 0, 0x00000001, 0x001);
+    test_imm_op!(3, sltiu, 0, 0x00000002, 0x001);
 }
