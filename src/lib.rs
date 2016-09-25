@@ -50,7 +50,8 @@ impl Processor {
     /// Check if `rs1` is less than sign-extended `imm` in an unsigned comparison.
     fn sltiu(&mut self, rd: Register, rs1: Register, imm: u32) {
         let rs1_val: u32 = self.get(rs1);
-        if imm == 1 {  // SEQZ pseudo-op.
+        if imm == 1 {
+            // SEQZ pseudo-op.
             self.set(rd, if rs1_val == 0 { 1 } else { 0 })
         } else {
             self.set(rd, if rs1_val < imm { 1 } else { 0 })
