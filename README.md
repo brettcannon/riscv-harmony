@@ -6,7 +6,7 @@ A [RISC-V](https://riscv.org/)
 
 ## Purpose
 There are three reasons for this project. First and foremost is for me
-to learn Rust. Since the language is a systems one, I figured it would
+to learn Rust. Since the language is systems-oriented, I figured it would
 be a good fit for writing an ISA simulator (plus it might help me
 learn some low-level details of how CPU execution works). This also
 means that this project should not be viewed as a robust
@@ -14,7 +14,7 @@ implementation of the RISC-V ISA until stated otherwise (if that ever
 even happens).
 
 The second reason is to help support and promote
-[RISC-V](https://riscv.org/specifications/) in what little way I can.
+[RISC-V](https://riscv.org/specifications/) what little I can.
 The idea of a from-scratch, open-source, RISC ISA for CPUs seems like
 a great idea and since I am a programmer this is one of the few ways
 I feel like I could have a chance of helping out (RISC-V already has
@@ -42,7 +42,7 @@ and [Angel](https://en.wikipedia.org/wiki/Angel_(Buffy_the_Vampire_Slayer)),
 respectively),
 or it was on purpose. Since it's more fun to assume that it was on
 purpose, I decided to continue with the tradition by naming my
-simulator after another vampire that is friendly towards the
+simulator after another vampire that is (sort of) friendly towards the
 [Scooby Gang](https://en.wikipedia.org/wiki/Scooby_Gang_(Buffy_the_Vampire_Slayer)):
 [Harmony](https://en.wikipedia.org/wiki/Harmony_Kendall). The choice
 also seems apt as this simulator will more than likely not ever be
