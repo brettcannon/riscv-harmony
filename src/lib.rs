@@ -48,6 +48,10 @@ impl Processor {
     }
 
     /// Check if `rs1` is less than sign-extended `imm` in an unsigned comparison.
+    ///
+    /// `SLTIU rd, rs1, 1` == `SEQZ rd, rs`
+    /// ([The RISC-V Instruction Set Manual](https://riscv.org/specifications/),
+    ///  Volume 1, Version, 2.1, Section 2.4)
     fn sltiu(&mut self, rd: Register, rs1: Register, imm: u32) {
         let rs1_val: u32 = self.get(rs1);
         if imm == 1 {
