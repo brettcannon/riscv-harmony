@@ -73,6 +73,8 @@ impl Processor {
     }
 
     /// Perform a bitwise XOR against `imm`.
+    ///
+    /// `XORI rd, sr1, -1` == `NOT rd, rs`
     fn xori(&mut self, rd: Register, rs1: Register, imm: u32) {
         let rs1_val = self.get(rs1);
         self.set(rd, rs1_val ^ imm);
