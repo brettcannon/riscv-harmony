@@ -60,10 +60,16 @@ impl Processor {
         }
     }
 
-    /// Perform a bitwise AND against an immediate.
+    /// Perform a bitwise AND against `imm`.
     fn andi(&mut self, rd: Register, rs1: Register, imm: u32) {
         let rs1_val = self.get(rs1);
         self.set(rd, rs1_val & imm);
+    }
+
+    /// Perform a bitwise OR against `imm`.
+    fn ori(&mut self, rd: Register, rs1: Register, imm: u32) {
+        let rs1_val = self.get(rs1);
+        self.set(rd, rs1_val | imm);
     }
 }
 
@@ -221,4 +227,18 @@ fn andi() {
 
     test_imm_zerosrc1!(13, andi, 0, 0x0f0);
     test_imm_zerodest!(14, andi, 0x00ff00ff, 0x70f);
+}
+
+#[test]
+fn ori() {
+    // From https://github.com/riscv/riscv-tests/blob/master/isa/rv64ui/ori.S
+    test_imm_op!(2, ori, 0xffffff0f, 0xff00ff00, 0xf0f);
+    test_imm_op!(3, ori, 0x0ff00ff0, 0x0ff00ff0, 0x0f0);
+    test_imm_op!(4, ori, 0x00ff07ff, 0x00ff00ff, 0x70f);
+    test_imm_op!(5, ori, 0xf00ff0ff, 0xf00ff00f, 0x0f0);
+
+    test_imm_src1_eq_dest!(6, ori, 0xff00fff0, 0xff00ff00, 0x0f0);
+
+    test_imm_zerosrc1!(13, ori, 0x0f0, 0x0f0);
+    test_imm_zerodest!(14, ori, 0x00ff00ff, 0x70f);
 }
