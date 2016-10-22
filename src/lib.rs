@@ -71,6 +71,12 @@ impl Processor {
         let rs1_val = self.get(rs1);
         self.set(rd, rs1_val | imm);
     }
+
+    /// Perform a bitwise XOR against `imm`.
+    fn xori(&mut self, rd: Register, rs1: Register, imm: u32) {
+        let rs1_val = self.get(rs1);
+        self.set(rd, rs1_val ^ imm);
+    }
 }
 
 fn sign_extend(imm: u32) -> u32 {
@@ -241,4 +247,18 @@ fn ori() {
 
     test_imm_zerosrc1!(13, ori, 0x0f0, 0x0f0);
     test_imm_zerodest!(14, ori, 0x00ff00ff, 0x70f);
+}
+
+#[test]
+fn xori() {
+    // From https://github.com/riscv/riscv-tests/blob/master/isa/rv64ui/xori.S
+    test_imm_op!(2, xori, 0xff00f00f, 0x00ff0f00, 0xf0f);
+    test_imm_op!(3, xori, 0x0ff00f00, 0x0ff00ff0, 0x0f0);
+    test_imm_op!(4, xori, 0x00ff0ff0, 0x00ff08ff, 0x70f);
+    test_imm_op!(5, xori, 0xf00ff0ff, 0xf00ff00f, 0x0f0);
+
+    test_imm_src1_eq_dest!(6, xori, 0xff00f00f, 0xff00f700, 0x70f);
+
+    test_imm_zerosrc1!(13, xori, 0x0f0, 0x0f0);
+    test_imm_zerodest!(14, xori, 0x00ff00ff, 0x70f);
 }
