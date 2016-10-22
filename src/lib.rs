@@ -1,3 +1,7 @@
+/// A RISC-V simulator baed on
+/// ([the RISC-V Instruction Set Manual](https://riscv.org/specifications/),
+///  Volume 1, Version, 2.1, Section 2.4).
+
 type Register = usize;
 
 struct Processor {
@@ -29,8 +33,6 @@ impl Processor {
     ///
     /// Overflow is ignored.
     /// `ADDI rd, rs1, 0` == `MV rd, rs1`
-    /// ([The RISC-V Instruction Set Manual](https://riscv.org/specifications/),
-    ///  Volume 1, Version, 2.1, Section 2.4)
     fn addi(&mut self, rd: Register, rs1: Register, imm: u32) {
         let signed_imm = imm as i32;
         let rs1_val = self.get(rs1) as i32;
@@ -38,9 +40,7 @@ impl Processor {
         self.set(rd, result as u32);
     }
 
-    /// Check if `rs1` is less than sign-extended `imm`.
-    /// ([The RISC-V Instruction Set Manual](https://riscv.org/specifications/),
-    ///  Volume 1, Version, 2.1, Section 2.4)
+    /// Check if `rs1` is less than the sign-extended `imm`.
     fn slti(&mut self, rd: Register, rs1: Register, imm: u32) {
         let signed_imm = imm as i32;
         let rs1_val = self.get(rs1) as i32;
@@ -50,8 +50,6 @@ impl Processor {
     /// Check if `rs1` is less than sign-extended `imm` in an unsigned comparison.
     ///
     /// `SLTIU rd, rs1, 1` == `SEQZ rd, rs`
-    /// ([The RISC-V Instruction Set Manual](https://riscv.org/specifications/),
-    ///  Volume 1, Version, 2.1, Section 2.4)
     fn sltiu(&mut self, rd: Register, rs1: Register, imm: u32) {
         let rs1_val: u32 = self.get(rs1);
         if imm == 1 {
@@ -60,6 +58,12 @@ impl Processor {
         } else {
             self.set(rd, if rs1_val < imm { 1 } else { 0 })
         }
+    }
+
+    /// Perform a bitwise AND against an immediate.
+    fn andi(&mut self, rd: Register, rs1: Register, imm: u32) {
+        let rs1_val = self.get(rs1);
+        self.set(rd, rs1_val & imm);
     }
 }
 
@@ -203,4 +207,18 @@ fn sltiu() {
     test_imm_op!(3, sltiu, 1, 0x00000000, 0x001);
     test_imm_op!(3, sltiu, 0, 0x00000001, 0x001);
     test_imm_op!(3, sltiu, 0, 0x00000002, 0x001);
+}
+
+#[test]
+fn andi() {
+    // From https://github.com/riscv/riscv-tests/blob/master/isa/rv64ui/andi.S
+    test_imm_op!(2, andi, 0xff00ff00, 0xff00ff00, 0xf0f);
+    test_imm_op!(3, andi, 0x000000f0, 0x0ff00ff0, 0x0f0);
+    test_imm_op!(4, andi, 0x0000000f, 0x00ff00ff, 0x70f);
+    test_imm_op!(5, andi, 0x00000000, 0xf00ff00f, 0x0f0);
+
+    test_imm_src1_eq_dest!(6, andi, 0x00000000, 0xff00ff00, 0x0f0);
+
+    test_imm_zerosrc1!(13, andi, 0, 0x0f0);
+    test_imm_zerodest!(14, andi, 0x00ff00ff, 0x70f);
 }
