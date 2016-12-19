@@ -1,3 +1,5 @@
+[![No Maintenance Intended](http://unmaintained.tech/badge.svg)](http://unmaintained.tech/)
+
 # riscv-harmony
 A [RISC-V](https://riscv.org/)
 [ISA](https://riscv.org/specifications/) simulator written in Rust.
