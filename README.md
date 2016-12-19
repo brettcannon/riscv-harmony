@@ -1,8 +1,8 @@
-[![No Maintenance Intended](http://unmaintained.tech/badge.svg)](http://unmaintained.tech/)
-
 # riscv-harmony
 A [RISC-V](https://riscv.org/)
 [ISA](https://riscv.org/specifications/) simulator written in Rust.
+
+[![No Maintenance Intended](http://unmaintained.tech/badge.svg)](http://unmaintained.tech/)
 
 [![Build Status](https://travis-ci.org/brettcannon/riscv-harmony.svg?branch=master)](https://travis-ci.org/brettcannon/riscv-harmony)
 
