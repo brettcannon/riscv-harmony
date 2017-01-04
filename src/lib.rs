@@ -79,6 +79,26 @@ impl Processor {
         let rs1_val = self.get(rs1);
         self.set(rd, rs1_val ^ imm);
     }
+
+    /// Perform a logical left shift to `rs1`.
+    fn slli(&mut self, rd: Register, rs1: Register, imm: u32) {
+        let rs1_val = self.get(rs1);
+        self.set(rd, rs1_val << imm)
+    }
+
+    /// Perform a logical right shift to `rs1`.
+    /// This means zeroes are shifted into the upper bits.
+    fn srli(&mut self, rd: Register, rs1: Register, imm: u32) {
+        let rs1_val = self.get(rs1);
+        self.set(rd, rs1_val >> imm)
+    }
+
+    /// Perform an arithmetic right shift to `rs1`.
+    /// This means the original sign bit is shifted into the upper bits.
+    fn srai(&mut self, rd: Register, rs1: Register, imm: u32) {
+        let rs1_val = self.get(rs1) as i32;
+        self.set(rd, (rs1_val >> imm) as u32)
+    }
 }
 
 fn sign_extend(imm: u32) -> u32 {
@@ -128,6 +148,12 @@ macro_rules! test_imm_zerodest {
         cpu.$inst(rd, rs1, $imm);
         assert_eq!(0, cpu.get(rd));
     }}
+}
+
+macro_rules! test_srl {
+	($test_num:expr, $val1:expr, $imm:expr) => {{
+		test_imm_op!($test_num, srli, ($val1 as u32) >> $imm, $val1, $imm)
+	}};
 }
 
 #[test]
@@ -263,4 +289,85 @@ fn xori() {
 
     test_imm_zerosrc1!(13, xori, 0x0f0, 0x0f0);
     test_imm_zerodest!(14, xori, 0x00ff00ff, 0x70f);
+}
+
+#[test]
+fn slli() {
+    // From https://github.com/riscv/riscv-tests/blob/master/isa/rv64ui/slli.S
+    test_imm_op!(2, slli, 0x00000001, 0x00000001, 0);
+    test_imm_op!(3, slli, 0x00000002, 0x00000001, 1);
+    test_imm_op!(4, slli, 0x00000080, 0x00000001, 7);
+    test_imm_op!(5, slli, 0x00004000, 0x00000001, 14);
+    test_imm_op!(6, slli, 0x80000000, 0x00000001, 31);
+
+    test_imm_op!(7, slli, 0xffffffff, 0xffffffff, 0);
+    test_imm_op!(8, slli, 0xfffffffe, 0xffffffff, 1);
+    test_imm_op!(9, slli, 0xffffff80, 0xffffffff, 7);
+    test_imm_op!(10, slli, 0xffffc000, 0xffffffff, 14);
+    test_imm_op!(11, slli, 0x80000000, 0xffffffff, 31);
+
+    test_imm_op!(12, slli, 0x21212121, 0x21212121, 0);
+    test_imm_op!(13, slli, 0x42424242, 0x21212121, 1);
+    test_imm_op!(14, slli, 0x90909080, 0x21212121, 7);
+    test_imm_op!(15, slli, 0x48484000, 0x21212121, 14);
+    test_imm_op!(16, slli, 0x80000000, 0x21212121, 31);
+
+    test_imm_src1_eq_dest!(17, slli, 0x00000080, 0x00000001, 7);
+
+    test_imm_zerosrc1!(24, slli, 0, 31);
+    test_imm_zerodest!(25, slli, 33, 20);
+}
+
+#[test]
+fn srli() {
+    // From https://github.com/riscv/riscv-tests/blob/master/isa/rv64ui/srli.S
+    test_srl!(2, 0x80000000, 0);
+    test_srl!(3, 0x80000000, 1);
+    test_srl!(4, 0x80000000, 7);
+    test_srl!(5, 0x80000000, 14);
+    test_srl!(6, 0x80000001, 31);
+
+    test_srl!(7, 0xffffffff, 0);
+    test_srl!(8, 0xffffffff, 1);
+    test_srl!(9, 0xffffffff, 7);
+    test_srl!(10, 0xffffffff, 14);
+    test_srl!(11, 0xffffffff, 31);
+
+    test_srl!(12, 0x21212121, 0);
+    test_srl!(13, 0x21212121, 1);
+    test_srl!(14, 0x21212121, 7);
+    test_srl!(15, 0x21212121, 14);
+    test_srl!(16, 0x21212121, 31);
+
+    test_imm_src1_eq_dest!(17, srli, 0x01000000, 0x80000000, 7);
+
+    test_imm_zerosrc1!(24, srli, 0, 4);
+    test_imm_zerodest!(25, srli, 33, 10);
+}
+
+#[test]
+fn srai() {
+    // From https://github.com/riscv/riscv-tests/blob/master/isa/rv64ui/srai.S
+    test_imm_op!(2, srai, 0x00000000, 0x00000000, 0);
+    test_imm_op!(3, srai, 0xc0000000, 0x80000000, 1);
+    test_imm_op!(4, srai, 0xff000000, 0x80000000, 7);
+    test_imm_op!(5, srai, 0xfffe0000, 0x80000000, 14);
+    test_imm_op!(6, srai, 0xffffffff, 0x80000001, 31);
+
+    test_imm_op!(7, srai, 0x7fffffff, 0x7fffffff, 0);
+    test_imm_op!(8, srai, 0x3fffffff, 0x7fffffff, 1);
+    test_imm_op!(9, srai, 0x00ffffff, 0x7fffffff, 7);
+    test_imm_op!(10, srai, 0x0001ffff, 0x7fffffff, 14);
+    test_imm_op!(11, srai, 0x00000000, 0x7fffffff, 31);
+
+    test_imm_op!(12, srai, 0x81818181, 0x81818181, 0);
+    test_imm_op!(13, srai, 0xc0c0c0c0, 0x81818181, 1);
+    test_imm_op!(14, srai, 0xff030303, 0x81818181, 7);
+    test_imm_op!(15, srai, 0xfffe0606, 0x81818181, 14);
+    test_imm_op!(16, srai, 0xffffffff, 0x81818181, 31);
+
+    test_imm_src1_eq_dest!(17, srai, 0xff000000, 0x80000000, 7);
+
+    test_imm_zerosrc1!(24, srai, 0, 4);
+    test_imm_zerodest!(25, srai, 33, 10);
 }
