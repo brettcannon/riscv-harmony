@@ -99,6 +99,12 @@ impl Processor {
         let rs1_val = self.get(rs1) as i32;
         self.set(rd, (rs1_val >> imm) as u32)
     }
+
+    /// Set the upper 20 bits of the register and zeroes for the rest.
+    fn lui(&mut self, rd: Register, imm: u32) {
+        let shifted_imm = imm << (32 - 20);
+        self.set(rd, shifted_imm);
+    }
 }
 
 fn sign_extend(imm: u32) -> u32 {
@@ -370,4 +376,48 @@ fn srai() {
 
     test_imm_zerosrc1!(24, srai, 0, 4);
     test_imm_zerodest!(25, srai, 33, 10);
+}
+
+#[test]
+fn lui() {
+    // From https://github.com/riscv/riscv-tests/blob/master/isa/rv64ui/lui.S
+    // TEST_CASE( 2, x1, 0x0000000000000000, lui x1, 0x00000 );
+    let mut cpu = Processor::new();
+    let rd: Register = 1;
+    cpu.set(rd, 1);
+    cpu.lui(rd, 0x00000);
+    assert_eq!(0x00000000, cpu.get(rd));
+
+    // TEST_CASE( 3, x1, 0xfffffffffffff800, lui x1, 0xfffff;sra x1,x1,1);
+    let mut cpu = Processor::new();
+    let rd: Register = 1;
+    cpu.set(rd, 1);
+    cpu.lui(rd, 0xfffff);
+    let signed_result = cpu.get(rd) as i32;
+    let shifted_result = signed_result >> 1;
+    assert_eq!(0xfffff800, shifted_result as u32);
+
+    // TEST_CASE( 4, x1, 0x00000000000007ff, lui x1, 0x7ffff;sra x1,x1,20);
+    let mut cpu = Processor::new();
+    let rd: Register = 1;
+    cpu.set(rd, 1);
+    cpu.lui(rd, 0x7ffff);
+    let result = cpu.get(rd) as i32;
+    let shifted_result = result >> 20;
+    assert_eq!(0x000007ff, shifted_result);
+
+    // TEST_CASE( 5, x1, 0xfffffffffffff800, lui x1, 0x80000;sra x1,x1,20);
+    let mut cpu = Processor::new();
+    let rd: Register = 1;
+    cpu.set(rd, 1);
+    cpu.lui(rd, 0x80000);
+    let signed_result = cpu.get(rd) as i32;
+    let shifted_result = signed_result >> 20;
+    assert_eq!(0xfffff800, shifted_result as u32);
+
+    // TEST_CASE( 6, x0, 0, lui x0, 0x80000 );
+    let mut cpu = Processor::new();
+    let rd: Register = 0;
+    cpu.lui(rd, 0x80000);
+    assert_eq!(0x00000000, cpu.get(rd));
 }
